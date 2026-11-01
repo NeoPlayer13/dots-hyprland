@@ -103,40 +103,58 @@ Scope {
         }
     }
 
+    function toggleSearch() {
+        OverviewController.prepareSearch(() => {
+            GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
+        });
+    }
+
     function toggleClipboard() {
-        if (GlobalStates.overviewOpen && overviewScope.dontAutoCancelSearch) {
-            GlobalStates.overviewOpen = false;
-            return;
-        }
-        overviewScope.dontAutoCancelSearch = true;
-        panelWindow.setSearchingText(Config.options.search.prefix.clipboard);
-        GlobalStates.overviewOpen = true;
+        OverviewController.prepareSearch(() => {
+            if (GlobalStates.overviewOpen && overviewScope.dontAutoCancelSearch) {
+                GlobalStates.overviewOpen = false;
+                return;
+            }
+            overviewScope.dontAutoCancelSearch = true;
+            panelWindow.setSearchingText(Config.options.search.prefix.clipboard);
+            GlobalStates.overviewOpen = true;
+        });
     }
 
     function toggleEmojis() {
-        if (GlobalStates.overviewOpen && overviewScope.dontAutoCancelSearch) {
-            GlobalStates.overviewOpen = false;
-            return;
-        }
-        overviewScope.dontAutoCancelSearch = true;
-        panelWindow.setSearchingText(Config.options.search.prefix.emojis);
-        GlobalStates.overviewOpen = true;
+        OverviewController.prepareSearch(() => {
+            if (GlobalStates.overviewOpen && overviewScope.dontAutoCancelSearch) {
+                GlobalStates.overviewOpen = false;
+                return;
+            }
+            overviewScope.dontAutoCancelSearch = true;
+            panelWindow.setSearchingText(Config.options.search.prefix.emojis);
+            GlobalStates.overviewOpen = true;
+        });
+    }
+
+    IpcHandler {
+        target: "overview"
+
+        function toggle() { OverviewController.toggle(); }
+        function open() { OverviewController.open(); }
+        function close() { OverviewController.close(); }
     }
 
     IpcHandler {
         target: "search"
 
         function toggle() {
-            GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
+            overviewScope.toggleSearch();
         }
         function workspacesToggle() {
-            GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
+            OverviewController.toggle();
         }
         function close() {
-            GlobalStates.overviewOpen = false;
+            OverviewController.close();
         }
         function open() {
-            GlobalStates.overviewOpen = true;
+            OverviewController.prepareSearch(() => GlobalStates.overviewOpen = true);
         }
         function toggleReleaseInterrupt() {
             GlobalStates.superReleaseMightTrigger = false;
@@ -151,7 +169,7 @@ Scope {
         description: "Toggles search on press"
 
         onPressed: {
-            GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
+            overviewScope.toggleSearch();
         }
     }
     GlobalShortcut {
@@ -159,7 +177,7 @@ Scope {
         description: "Closes overview on press"
 
         onPressed: {
-            GlobalStates.overviewOpen = false;
+            OverviewController.close();
         }
     }
     GlobalShortcut {
@@ -167,7 +185,7 @@ Scope {
         description: "Toggles overview on press"
 
         onPressed: {
-            GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
+            OverviewController.toggle();
         }
     }
     GlobalShortcut {
@@ -183,7 +201,7 @@ Scope {
                 GlobalStates.superReleaseMightTrigger = true;
                 return;
             }
-            GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
+            overviewScope.toggleSearch();
         }
     }
     GlobalShortcut {

@@ -77,19 +77,27 @@ Scope {
     }
 
     IpcHandler {
+        target: "overview"
+
+        function toggle() { OverviewController.toggle(); }
+        function open() { OverviewController.open(); }
+        function close() { OverviewController.close(); }
+    }
+
+    IpcHandler {
         target: "search"
 
         function toggle() {
-            GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
+            OverviewController.toggle();
         }
         function workspacesToggle() {
-            GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
+            OverviewController.toggle();
         }
         function close() {
-            GlobalStates.overviewOpen = false;
+            OverviewController.close();
         }
         function open() {
-            GlobalStates.overviewOpen = true;
+            OverviewController.open();
         }
         function toggleReleaseInterrupt() {
             GlobalStates.superReleaseMightTrigger = false;
@@ -104,7 +112,7 @@ Scope {
         description: "Toggles overview on press"
 
         onPressed: {
-            GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
+            OverviewController.toggle();
         }
     }
 }

@@ -15,7 +15,7 @@ AppButton {
 
     checked: GlobalStates.overviewOpen
     onClicked: {
-        GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
+        OverviewController.toggle();
     }
 
     BarToolTip {

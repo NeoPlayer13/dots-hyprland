@@ -120,7 +120,7 @@ Item { // Bar content region
 
                     onPressed: event => {
                         if (event.button === Qt.RightButton) {
-                            GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
+                            OverviewController.toggle();
                         }
                     }
                 }

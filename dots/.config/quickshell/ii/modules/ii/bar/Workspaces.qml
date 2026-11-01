@@ -65,7 +65,7 @@ ButtonMouseArea {
         if (mouse.button == Qt.LeftButton)
             switchWorkspaceToHovered();
         else if (mouse.button == Qt.RightButton)
-            GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
+            OverviewController.toggle();
         else if (mouse.button == Qt.BackButton) 
             toggleSpecial()
     }
