@@ -88,13 +88,18 @@ qs -p "$fork" ipc call search toggle
 qs -p "$fork" ipc call search clipboardToggle
 ```
 
-The normal Hyprland bindings use `qs -c $qsConfig` for the fallback command.
-`test-shell` deliberately stops that installed `$qsConfig` instance and starts
-only the fork with `qs -p`, so the fallback sees no shell and launches Fuzzel.
-That is expected for this isolated test helper. To test the physical Super key,
-run the fork as the active `$qsConfig` installation or temporarily update the
-fallback binding to use the fork's `qs -p` path, then restore the binding after
-testing.
+The fork removes the competing Fuzzel fallback from the Super release binding.
+After changing `dots/.config/hypr/hyprland/keybinds.lua`, reload the fork's
+Hyprland Lua configuration before testing the physical key:
+
+```sh
+hyprctl reload
+```
+
+`test-shell` does not reload Hyprland configuration. If the running session
+still uses the old bindings, Super can continue to launch Fuzzel until the
+configuration is reloaded. Clipboard, emoji, and other utility bindings retain
+their existing fallback commands.
 
 ## Reading the startup log
 

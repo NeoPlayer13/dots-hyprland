@@ -13,6 +13,13 @@ function binding(source, name) {
 }
 const evaluate = (expression, context) => vm.runInNewContext(expression, context);
 
+test("Super release only dispatches the shell search handler", () => {
+    const source = fs.readFileSync(path.join(__dirname, "../dots/.config/hypr/hyprland/keybinds.lua"), "utf8");
+    assert.match(source, /hl\.bind\("SUPER \+ SUPER_L", hl\.dsp\.global\("quickshell:searchToggleRelease"\)/);
+    assert.match(source, /hl\.bind\("SUPER \+ SUPER_R", hl\.dsp\.global\("quickshell:searchToggleRelease"\)/);
+    assert.doesNotMatch(source, /SUPER \+ SUPER_[LR].*fuzzel/);
+});
+
 test("audio sliders tolerate missing devices and guard writes", () => {
     const source = read("modules/ii/sidebarRight/QuickSliders.qml");
     for (const device of ["sink", "source"]) {
