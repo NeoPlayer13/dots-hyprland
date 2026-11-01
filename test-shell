@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    cat <<'EOF'
+Usage: ./test-shell [--installed PATH]
+
+Temporarily run this checkout's Quickshell instead of the installed shell.
+PATH is the installed shell.qml or its directory (default: $XDG_CONFIG_HOME/quickshell/ii).
+Keep this terminal open; Ctrl+C stops the test and restarts the installed shell.
+No installation or Git changes are made. Preferences and desktop state are shared.
+See TESTING.md for prerequisites, limitations, and recovery.
+EOF
+}
+
+fail() {
+    printf 'test-shell: %s\n' "$*" >&2
+    exit 1
+}
+
+installed="${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/ii"
+case "${1:-}" in
+    -h|--help) usage; exit 0 ;;
+    --installed)
+        [[ $# == 2 ]] || fail '--installed requires one path.'
+        installed=$2
+        ;;
+    '') [[ $# == 0 ]] || fail 'Unexpected empty argument.' ;;
+    *) usage >&2; exit 1 ;;
+esac
+
+for command in qs hyprctl flock; do
+    command -v "$command" >/dev/null || fail "Missing command: $command"
+done
+[[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" && -n "${WAYLAND_DISPLAY:-}" ]] \
+    || fail 'Run this from a terminal inside Hyprland on the test machine.'
+[[ -n "${ILLOGICAL_IMPULSE_VIRTUAL_ENV:-}" && -d "$ILLOGICAL_IMPULSE_VIRTUAL_ENV" ]] \
+    || fail 'Set ILLOGICAL_IMPULSE_VIRTUAL_ENV to the working shell virtual environment.'
+[[ -d "${XDG_RUNTIME_DIR:-}" && -w "$XDG_RUNTIME_DIR" ]] \
+    || fail 'XDG_RUNTIME_DIR must be a writable session directory.'
+hyprctl activeworkspace -j >/dev/null || fail 'Cannot contact Hyprland.'
+
+repo=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+fork="$repo/dots/.config/quickshell/ii/shell.qml"
+[[ -d "$installed" ]] && installed="$installed/shell.qml"
+# Keep symlink spelling: Quickshell selects instances by their launch path.
+installed=$(cd -L -- "$(dirname -- "$installed")" && printf '%s/%s' "$PWD" "$(basename -- "$installed")")
+[[ -f "$installed" ]] || fail "Installed shell not found: $installed"
+[[ -f "$fork" ]] || fail "Fork shell not found: $fork"
+[[ ! "$installed" -ef "$fork" ]] || fail 'Installed shell already points at this checkout.'
+[[ -f "${fork%/*}/modules/common/widgets/shapes/ShapeCanvas.qml" ]] \
+    || fail 'Missing shapes submodule. Run: git submodule update --init --recursive'
+
+exec 9>"$XDG_RUNTIME_DIR/ii-test-shell.lock"
+flock -n 9 || fail 'Another test-shell session is already running.'
+unset QS_CONFIG_PATH QS_CONFIG_NAME QS_MANIFEST
+qs -p "$installed" ipc show >/dev/null 2>&1 \
+    || fail "No installed shell responding at $installed. Use --installed with its launch path."
+if qs -p "$fork" ipc show >/dev/null 2>&1; then
+    fail 'This checkout is already running. Stop that instance first.'
+fi
+
+restore=false
+test_pid=
+cleanup() {
+    local status=$?
+    trap - EXIT
+    trap '' INT TERM HUP
+    if [[ -n "$test_pid" ]]; then
+        qs -p "$fork" kill >/dev/null 2>&1 || true
+        kill "$test_pid" 2>/dev/null || true
+        wait "$test_pid" 2>/dev/null || true
+        hyprctl dispatch 'hl.plugin.scrolloverview.overview("close")' >/dev/null 2>&1 || true
+    fi
+    if $restore; then
+        printf '\nRestarting installed shell: %s\n' "$installed"
+        # Do not pass the session lock to the detached, long-lived shell.
+        if ! qs -p "$installed" --no-duplicate --daemonize 9>&-; then
+            printf 'Restart failed. Run: qs -p %q --no-duplicate --daemonize\n' "$installed" >&2
+            status=1
+        fi
+    fi
+    exit "$status"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
+
+printf 'Testing: %s\nInstalled shell: %s\n' "$fork" "$installed"
+printf 'Shared preferences; no files are installed. Press Ctrl+C to restore.\n'
+restore=true
+qs -p "$installed" kill
+
+# Wait for shortcuts and desktop services to be released before starting the fork.
+for ((attempt = 0; attempt < 50; attempt++)); do
+    if ! qs -p "$installed" ipc show >/dev/null 2>&1; then
+        break
+    fi
+    sleep 0.1
+done
+[[ $attempt -lt 50 ]] || fail 'Installed shell did not stop; refusing to start a second shell.'
+
+qs -p "$fork" 9>&- &
+test_pid=$!
+wait "$test_pid"
