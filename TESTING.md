@@ -68,8 +68,10 @@ changing the upstream remote, or cherry-picking the PR into your normal checkout
 - Switch between scrolling and non-scrolling workspaces and try again. Routing
   should follow the current workspace, not the previous one.
 - Try rapid toggles, selecting a window, and Escape. No stale overlay should remain.
-- Search (**Super**), clipboard (**Super+V**), and emoji (**Super+Period**) should
-  still use Quickshell, including after opening the native overview.
+- Test search, clipboard, and emoji through the explicit IPC commands below,
+  including after opening the native overview. **Super**, **Super+V**, and
+  **Super+Period** also have installed-shell fallback bindings; during this
+  temporary test they can launch Fuzzel instead (see below).
 - With ScrollOverview absent/unloaded in a test session, the scrolling overview
   should fall back to Quickshell. Do not unload plugins on a session you depend on.
 - Repeat using the waffle panel family/task-view button if you use that UI.
@@ -77,11 +79,22 @@ changing the upstream remote, or cherry-picking the PR into your normal checkout
 For explicit IPC tests, from the fork directory in another terminal:
 
 ```sh
-qs -p "$PWD/dots/.config/quickshell/ii" ipc show
-qs -p "$PWD/dots/.config/quickshell/ii" ipc call overview open
-qs -p "$PWD/dots/.config/quickshell/ii" ipc call overview close
-qs -p "$PWD/dots/.config/quickshell/ii" ipc call overview toggle
+fork="$PWD/dots/.config/quickshell/ii"
+qs -p "$fork" ipc show
+qs -p "$fork" ipc call overview open
+qs -p "$fork" ipc call overview close
+qs -p "$fork" ipc call overview toggle
+qs -p "$fork" ipc call search toggle
+qs -p "$fork" ipc call search clipboardToggle
 ```
+
+The normal Hyprland bindings use `qs -c $qsConfig` for the fallback command.
+`test-shell` deliberately stops that installed `$qsConfig` instance and starts
+only the fork with `qs -p`, so the fallback sees no shell and launches Fuzzel.
+That is expected for this isolated test helper. To test the physical Super key,
+run the fork as the active `$qsConfig` installation or temporarily update the
+fallback binding to use the fork's `qs -p` path, then restore the binding after
+testing.
 
 ## Reading the startup log
 

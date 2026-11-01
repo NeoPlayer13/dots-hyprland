@@ -89,6 +89,8 @@ trap 'exit 129' HUP
 
 printf 'Testing: %s\nInstalled shell: %s\n' "$fork" "$installed"
 printf 'Shared preferences; no files are installed. Press Ctrl+C to restore.\n'
+printf 'Super/clipboard/emoji fallback checks still target the stopped installed shell and may launch Fuzzel.\n'
+printf 'Test the fork launcher from another terminal: qs -p %q ipc call search toggle\n' "$fork"
 restore=true
 qs -p "$installed" kill
 
