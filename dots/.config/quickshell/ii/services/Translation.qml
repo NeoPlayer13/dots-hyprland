@@ -67,6 +67,7 @@ Singleton {
 
     TranslationReader {
         id: generatedTranslationFileView
+        optional: true
         translationsDir: root.generatedTranslationsDir
         languageCode: root.languageCode
         onContentLoaded: (data) => {
@@ -118,7 +119,9 @@ Singleton {
     component TranslationReader: FileView {
         id: translationReader
         required property string translationsDir
+        property bool optional: false
         property string languageCode: root.languageCode
+        printErrors: !optional
         signal contentLoaded(var data)
 
         function reread() { // Proper reload in case the file was incorrect before
@@ -140,6 +143,8 @@ Singleton {
             }
         }
         onLoadFailed: error => {
+            if (translationReader.optional && error !== FileViewError.FileNotFound)
+                console.warn("[Translation] Failed to load translations:", translationReader.path, FileViewError.toString(error));
             translationReader.contentLoaded({});
         }
     }

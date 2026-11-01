@@ -83,6 +83,23 @@ qs -p "$PWD/dots/.config/quickshell/ii" ipc call overview close
 qs -p "$PWD/dots/.config/quickshell/ii" ipc call overview toggle
 ```
 
+## Reading the startup log
+
+`Configuration Loaded` confirms QML loaded, not that every runtime binding is
+healthy. The helper leaves warnings visible so they can be investigated.
+`Killed ...` at launch and `Exiting due to IPC request` on Ctrl+C are expected;
+`Restarting installed shell` followed by `Configuration Loaded` confirms restoration.
+
+Audio sliders stay disabled until their PipeWire devices are available. An absent
+or not-yet-loaded AI model displays `No model selected`; choose an available model
+if you use chat. Missing optional generated translations fall back to bundled
+translations/source text without creating files in your installed configuration.
+
+`quickshell.desktopentry: Encountered invalid line in desktop entry` comes from
+an application `.desktop` file, not the launcher or overview controller. The
+message alone does not identify the file. Inspect application entries separately;
+do not reinstall the fork or delete your shell settings to resolve it.
+
 ## Limits and recovery
 
 This is a **live-shell test, not a sandbox**. The fork shares your preferences,
